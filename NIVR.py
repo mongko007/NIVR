@@ -35,8 +35,8 @@ class NIVR(nn.Module):
             for y in range(self.side_len):
                 pix_idx = self.side_len * x + y
                 c_tensor = position_encoder_c(coords[pix_idx], phi_t, self.side_len)
-                output_pix = m_f(c_tensor.float())
-                output_rgb.append(output_pix)
+                output_pix_rgb = self.mf(c_tensor.float())
+                output_rgb.append(output_pix_rgb)
         output = torch.stack(output_rgb, -1)
         output = output.view(3, self.side_len, self.side_len)
 
