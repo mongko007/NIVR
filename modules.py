@@ -43,37 +43,47 @@ class mp(nn.Module):
     def forward(self, x):
         x = x.view(1, -1)
         output = self.mlp(x).view(-1, 1)
-        output = torch.cat((output, output), 1)
+        # output = torch.cat((output, output), 1)
 
         return output
 
 
-def position_encoder_c(coords, phi_t, lc):
-    N_c = int(math.log(lc, 2) + 1)
+def position_encoder_c(coords, phi_t, side_len):
+    N_c = int(math.log(side_len, 2) + 1)
     # print(N_c)
 
     sin_list = []
     cos_list = []
 
     for i in range(N_c):
-        sin_list.append(torch.sin(2 ** (i - 1) * math.pi * coords + phi_t[i]))
-        cos_list.append(torch.cos(2 ** (i - 1) * math.pi * coords + phi_t[i]))
+        sin_list.append(torch.sin(2 ** (i - 1) * math.pi * coords + phi_t[2*i]))
+        cos_list.append(torch.cos(2 ** (i - 1) * math.pi * coords + phi_t[2*i+1]))
     sin_tensor = torch.stack(sin_list, 0)
     cos_tensor = torch.stack(cos_list, 0)
 
     # print(sin_list)
     # print(cos_list)
 
-    # print(sin_tensor)  # Nc * 2
-    # print(cos_tensor)
+    print('sin_tensor.shape: ' + str(sin_tensor.shape))  # Nc * side_len * side_len * 2
+    print('cos_tensor.shape: ' + str(cos_tensor.shape))
 
-    # print(sin_tensor.shape)
-    # print(cos_tensor.shape)
+    print('sin_tensor: ')
+    print(sin_tensor)  # Nc * 2
+    # print(sin_tensor[0][1])
+    # print(sin_tensor[0][2])
 
-    c_tensor = torch.cat((sin_tensor, cos_tensor), dim=1)
-    # print(c_tensor)
-    # print(c_tensor.shape)
-    c_tensor = c_tensor.view(1, -1)
+    print('cos_tensor: ')
+    print(cos_tensor)
+    # print(cos_tensor[0][1])
+    # print(cos_tensor[0][2])
+
+    c_tensor = torch.cat((sin_tensor, cos_tensor), dim=-1)
+    print('c_tensor: ')
+    print(c_tensor)
+    # print(c_tensor[0][1])
+    # print(c_tensor[0][2])
+    print(c_tensor.shape)
+    # c_tensor = c_tensor.view(1, -1)
     # print(c_tensor)
     # print(c_tensor.shape)
 
@@ -95,43 +105,48 @@ class mf(nn.Module):
 
 if __name__ == '__main__':
     time_len = 120
-    side_len = 10
+    side_len = 2
     frame_idx = 1
     t = get_t(time_len, frame_idx)
-    print(t)
+    print('t: ' + str(t))
     r_tensor = position_encoder_t(t, time_len)
-    print(r_tensor.shape)
-    print(r_tensor)
+    print('r_tensor: ' + str(r_tensor))
+    print('r_tensor.shape: ' + str(r_tensor.shape))
     mp_in = int(math.log(time_len, 2) + 1) * 2
     mp_out = 2 * int(math.log(side_len, 2) + 1)
-    print(mp_in)
-    print(mp_out)
+    print('mp_in: ' + str(mp_in))
+    print('mp_out: ' + str(mp_out))
     m_p = mp(in_features=mp_in, out_features=mp_out)
     phi_t = m_p(r_tensor.float())
-    print(phi_t.shape)
-    print(phi_t)
-    coords_list = get_mgrid(side_len=side_len, dim=2, centered=True, include_end=False)
-    print('coords_list.shape：' + str(coords_list.shape))  # 65536 * 2
-    coords = coords_list[1]
-    print(coords.shape)
+    print('phi_t: ' + str(phi_t))
+    print('Nt: ' + str(int(mp_out / 2)))
+    print('phi_t.shape: ' + str(phi_t.shape))  # 2N ([sin, cos] * N)
+    coords = get_mgrid(side_len=side_len, dim=2, centered=True, include_end=False)
+    print('coords.shape：' + str(coords.shape))  # side_len * side_len * 2
+    # coords = coords_list[1]
+    # print(coords.shape)
     c_tensor = position_encoder_c(coords, phi_t, side_len)
-    mf_in = c_tensor.shape[1]
-    mf_out = 3
-    m_f = mf(in_features=mf_in, out_features=mf_out)
-    output = m_f(c_tensor.float())
-    print(output.shape)
-    print(output)
-    output_rgb = []
-    for x in range(side_len):
-        for y in range(side_len):
-            pix_idx = side_len * x + y
-            # print(pix_idx)
-            c_tensor = position_encoder_c(coords_list[pix_idx], phi_t, side_len)
-            output_pix = m_f(c_tensor.float())
-            output_rgb.append(output_pix)
-    output = torch.stack(output_rgb, -1)
-    output = output.view(3, side_len, side_len)
-    print('output: ' + str(output.shape))
+    # print('c_tensor: ' + str(c_tensor))
+    # print('c_tensor.shape: ' + str(c_tensor.shape))
+
+
+    # mf_in = c_tensor.shape[1]
+    # mf_out = 3
+    # m_f = mf(in_features=mf_in, out_features=mf_out)
+    # output = m_f(c_tensor.float())
+    # print(output.shape)
+    # print(output)
+    # output_rgb = []
+    # for x in range(side_len):
+    #     for y in range(side_len):
+    #         pix_idx = side_len * x + y
+    #         # print(pix_idx)
+    #         c_tensor = position_encoder_c(coords_list[pix_idx], phi_t, side_len)
+    #         output_pix = m_f(c_tensor.float())
+    #         output_rgb.append(output_pix)
+    # output = torch.stack(output_rgb, -1)
+    # output = output.view(3, side_len, side_len)
+    # print('output: ' + str(output.shape))
     # a = torch.tensor([1, 2, 3])
     # b = torch.tensor([11, 22, 33])
     # c = torch.tensor([111, 222, 333])

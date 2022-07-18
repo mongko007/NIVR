@@ -43,11 +43,19 @@ def get_mgrid(side_len, dim=2, centered=True, include_end=False):
         pixel_coords -= 1
 
     # print(pixel_coords)
-
-    pixel_coords = torch.Tensor(pixel_coords).view(-1, dim)
-
     # print(pixel_coords.shape)
+
+    pixel_coords = torch.Tensor(pixel_coords)
     # print(pixel_coords)
+    # print(pixel_coords.shape)
+
+    pixel_coords = torch.squeeze(pixel_coords)  # [side_len, side_len, 2]
+    # print(pixel_coords)
+    # print(pixel_coords.shape)
+
+    # pixel_coords = torch.Tensor(pixel_coords).view(-1, dim)
+    # print(pixel_coords)
+    # print(pixel_coords.shape)
 
     return pixel_coords
 
@@ -65,6 +73,6 @@ def get_t(time_len, idx):
 
 
 if __name__ == '__main__':
-    get_mgrid(sidelen=10, dim=2, centered=True, include_end=False)
+    get_mgrid(side_len=10, dim=2, centered=True, include_end=False)
     # for i in range(120):
     #     get_t(120, i)
